@@ -7,3 +7,7 @@ const API = axios.create({
 export const getBriefing = (icao) => {
   return API.get(`/briefing/${icao}`);
 };
+
+export const getTaf = (icao) => {
+  return API.get(`/taf/${icao}`);
+};

@@ -1,30 +1,39 @@
-import { useState } from "react";
-import { getBriefing } from "./services/api";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
-import SearchBar from "./components/SearchBar";
-import BriefingCard from "./components/BriefingCard";
+import Dashboard from "./pages/Dashboard";
+import Metar from "./pages/Metar";
+import Taf from "./pages/Taf";
+import RouteBriefing from "./pages/RouteBriefing";
 
 function App() {
-  const [briefing, setBriefing] = useState(null);
-
-  const fetchBriefing = async (icao) => {
-    try {
-      const res = await getBriefing(icao);
-
-      setBriefing(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>✈ Aviation Weather Briefing System</h1>
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={<Dashboard />}
+        />
 
-      <SearchBar onSearch={fetchBriefing} />
+        <Route
+          path="/metar"
+          element={<Metar />}
+        />
 
-      <BriefingCard data={briefing} />
-    </div>
+        <Route
+          path="/taf"
+          element={<Taf />}
+        />
+
+        <Route
+          path="/route"
+          element={<RouteBriefing />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
