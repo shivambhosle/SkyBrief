@@ -61,17 +61,36 @@ SkyBrief is a full-stack web application that provides real-time aviation weathe
 
 ## Architecture
 
-React + Vite
-        │
-     Axios API
-        │
-     FastAPI Backend
-        │
- Aviation Weather Data
-        │
- METAR / TAF Parsing
-        │
- GO • CAUTION • NO-GO
+```text
+┌─────────────────────┐
+│   React + Vite UI   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│      Axios API      │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   FastAPI Backend   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Aviation Weather API│
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ METAR / TAF Parsing │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ GO • CAUTION • NO-GO│
+└─────────────────────┘
+```
 
 ---
 
