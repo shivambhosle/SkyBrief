@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
-import axios from "axios";
+import API from "../services/api";
 
 function RouteBriefing() {
 
@@ -23,19 +23,12 @@ function RouteBriefing() {
     return;
   }
 
-  /*if (departure === destination) {
-    setError("Departure and destination airports cannot be the same.");
-    setRouteData(null);
-    return;
-  }
-*/
-
   try {
 
     setError("");
 
-    const res = await axios.get(
-      `http://127.0.0.1:8000/route/${departure}/${destination}`
+    const res = await API.get(
+      `/route/${departure}/${destination}`
     );
 
     setRouteData(res.data);
