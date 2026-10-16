@@ -59,49 +59,49 @@ function RouteBriefing() {
 
   return (
 
-    <div className="min-h-screen bg-slate-950 text-white">
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
-
-        <h1 className="text-5xl font-bold text-sky-400 mb-6">
-          Route Briefing
-        </h1>
-
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-zinc-700 selection:text-white">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         <Navbar />
 
-        {/* SEARCH */}
+        {/* Section Header */}
+        <div className="border-b border-zinc-800 pb-6 mb-6">
+          <div className="font-mono text-xs text-zinc-400 uppercase tracking-widest mb-1.5">
+            Module 03 / En-Route Corridor Analysis
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            Route Weather Briefing
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            Comparative departure and destination atmospheric evaluation and cross-country risk synthesis.
+          </p>
+        </div>
 
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 mb-4">
-
-          <h2 className="text-xl mb-4">
-            Route Search
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-4">
-
+        {/* Route Search */}
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 mb-6">
+          <div className="grid md:grid-cols-3 gap-3">
             <input
+              maxLength={4}
               value={departure}
               onChange={(e) => setDeparture(e.target.value.toUpperCase())}
-              placeholder="Departure ICAO"
-              className="bg-slate-800 border border-slate-600 rounded-lg px-4 py-3"
+              placeholder="Departure ICAO (e.g. KJFK)"
+              className="px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-md font-mono text-xs uppercase tracking-wider text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 transition"
             />
 
             <input
+              maxLength={4}
               value={destination}
               onChange={(e) => setDestination(e.target.value.toUpperCase())}
-              placeholder="Destination ICAO"
-              className="bg-slate-800 border border-slate-600 rounded-lg px-4 py-3"
+              placeholder="Destination ICAO (e.g. KORD)"
+              className="px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-md font-mono text-xs uppercase tracking-wider text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 transition"
             />
 
             <button
               onClick={fetchRoute}
-              className="bg-sky-500 hover:bg-sky-600 rounded-lg font-semibold"
+              className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold rounded-md tracking-wide transition shadow-sm"
             >
-              Analyze Route
+              Evaluate Corridor
             </button>
-
           </div>
-
         </div>
         {error && (
 

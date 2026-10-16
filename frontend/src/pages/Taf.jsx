@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { getTaf } from "../services/api";
 import PlainEnglishBriefing from "../components/PlainEnglishBriefing";
@@ -6,407 +6,279 @@ import PlainEnglishBriefing from "../components/PlainEnglishBriefing";
 function Taf() {
   const [icao, setIcao] = useState("");
   const [taf, setTaf] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchTaf = async () => {
-
-  if (!icao) {
-    setError("Please enter an ICAO code.");
-    setTaf(null);
-    return;
-  }
-
-  if (!/^[A-Z]{4}$/.test(icao)) {
-    setError("ICAO code must contain exactly 4 letters.");
-    setTaf(null);
-    return;
-  }
-
-  try {
-
-    setError("");
-
-    const res = await getTaf(icao);
-
-    setTaf(res.data);
-
-  } catch (err) {
-
-    console.error(err);
-
-    setTaf(null);
-
-    if (err.response?.status === 404) {
-
-      setError("Airport not found. Please enter a valid ICAO code.");
-
-    } else {
-
-      setError("Unable to fetch forecast data. Please try again.");
-
+  const executeFetch = async (targetIcao) => {
+    const code = (targetIcao || icao).trim().toUpperCase();
+    if (!code) {
+      setError("Please enter a 4-letter airport ICAO code.");
+      setTaf(null);
+      return;
     }
 
-  }
+    if (!/^[A-Z]{4}$/.test(code)) {
+      setError("ICAO code must contain exactly 4 alphabetic characters.");
+      setTaf(null);
+      return;
+    }
 
-};
+    try {
+      setLoading(true);
+      setError("");
+      const res = await getTaf(code);
+      setTaf(res.data);
+    } catch (err) {
+      console.error(err);
+      setTaf(null);
+      if (err.response?.status === 404) {
+        setError(`Airport ${code} not found or no TAF issued.`);
+      } else {
+        setError("Unable to retrieve forecast data from AWC feed. Please retry.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialIcao = params.get("icao");
+    if (initialIcao && /^[A-Za-z]{4}$/.test(initialIcao)) {
+      const clean = initialIcao.toUpperCase();
+      setIcao(clean);
+      executeFetch(clean);
+    }
+  }, []);
 
   const forecast = taf?.forecast;
   const analysis = taf?.analysis;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-
-        <h1 className="text-5xl font-bold text-sky-400 mb-6">
-          TAF Analysis
-        </h1>
-
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-zinc-700 selection:text-white">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         <Navbar />
 
-        {/* ICAO SEARCH */}
-
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 mb-4">
-
-          <h2 className="text-xl mb-3">
-            ICAO Search
-          </h2>
-
-          <div className="flex gap-3">
-
-            <input
-              value={icao}
-              onChange={(e) => setIcao(e.target.value.toUpperCase())}
-              placeholder="Enter ICAO (VABB)"
-              className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3"
-            />
-
-            <button
-              onClick={fetchTaf}
-              className="bg-sky-500 hover:bg-sky-600 px-6 py-3 rounded-lg font-semibold"
-            >
-              Analyze TAF
-            </button>
-
+        {/* Section Header */}
+        <div className="border-b border-zinc-800 pb-6 mb-6">
+          <div className="font-mono text-xs text-zinc-400 uppercase tracking-widest mb-1.5">
+            Module 02 / Terminal Aerodrome Forecast
           </div>
-
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            TAF Trend Analysis
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            24-to-30-hour aerodrome weather projections, tempo groups, and atmospheric change sequences.
+          </p>
         </div>
+
+        {/* Search Bar */}
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 mb-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              executeFetch();
+            }}
+            className="flex flex-wrap items-center gap-3"
+          >
+            <div className="relative flex-1 min-w-[200px]">
+              <input
+                type="text"
+                maxLength={4}
+                value={icao}
+                onChange={(e) => setIcao(e.target.value.toUpperCase())}
+                placeholder="Enter 4-letter ICAO (e.g. KJFK, EGLL, EDDF)"
+                className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-md font-mono text-xs uppercase tracking-wider text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 transition"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold rounded-md tracking-wide transition shadow-sm disabled:opacity-50"
+            >
+              {loading ? "Fetching Forecast..." : "Inspect TAF"}
+            </button>
+          </form>
+        </div>
+
+        {/* Error notification */}
         {error && (
-
-          <div className="bg-red-900/30 border border-red-600 rounded-xl p-4 mb-4">
-
-            <h3 className="text-red-400 font-semibold">
-              Error
-            </h3>
-
-            <p className="text-red-200 mt-1">
-              {error}
-            </p>
-
+          <div className="bg-zinc-900/90 border border-rose-900/60 rounded-lg p-4 mb-6 text-xs font-mono text-rose-300">
+            <span className="font-bold text-rose-400 block mb-1">
+              FORECAST RETRIEVAL NOTICE
+            </span>
+            <p>{error}</p>
           </div>
-
         )}
+
+        {/* Forecast Content */}
         {forecast && (
+          <div className="space-y-5">
+            {/* Aerodrome Overview Header */}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5 flex flex-wrap items-center justify-between gap-4 font-mono">
+              <div>
+                <span className="text-[10px] tracking-widest text-zinc-400 uppercase block mb-1">
+                  AERODROME TERMINAL
+                </span>
+                <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+                  <span>{forecast.icao}</span>
+                  <span className="text-base font-normal text-zinc-400">
+                    — {forecast.airport || "Terminal"}
+                  </span>
+                </h2>
+              </div>
 
-          <>
-
-            {/* AIRPORT INFORMATION */}
-
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4">
-
-              <h2 className="text-3xl font-bold text-sky-300">
-                {forecast.airport}
-              </h2>
-
-              <p className="text-slate-400 mt-2">
-                ICAO: {forecast.icao}
-              </p>
-
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <span className="px-3 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                  ISSUED: {forecast.issue_time || "N/A"}
+                </span>
+                <span className="px-3 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                  VALID: {forecast.valid_from} → {forecast.valid_to}
+                </span>
+              </div>
             </div>
 
-            {/* RAW TAF */}
-
-            <div className="bg-black border border-slate-700 rounded-xl p-4 mb-4">
-
-              <h3 className="text-sky-300 text-lg font-semibold mb-3">
-                RAW TAF
-              </h3>
-
-              <pre className="text-green-400 font-mono whitespace-pre-wrap text-lg">
+            {/* RAW TAF Teletype */}
+            <div className="bg-zinc-950 border border-zinc-800/90 rounded-lg p-4 font-mono">
+              <div className="flex items-center justify-between text-zinc-400 text-[11px] mb-2 border-b border-zinc-800/60 pb-1.5">
+                <span>RAW TELETYPE RECORD</span>
+                <span>ORIGIN: AWC TAF FEED</span>
+              </div>
+              <pre className="text-emerald-400/90 whitespace-pre-wrap text-sm leading-relaxed">
                 {forecast.raw_taf}
               </pre>
-
             </div>
 
-            {/* PLAIN-ENGLISH BRIEFING */}
+            {/* Plain-English Advisory Summary */}
             <PlainEnglishBriefing icao={forecast.icao || icao} reportType="TAF" />
 
-            {/* FORECAST SUMMARY */}
-
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4">
-
-              <h3 className="text-sky-300 text-lg font-semibold mb-5">
-                FORECAST SUMMARY
-              </h3>
-
-              <div className="grid md:grid-cols-4 gap-4">
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Issue Time
-                  </p>
-
-                  <p className="text-white">
-                    {forecast.issue_time}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Valid From
-                  </p>
-
-                  <p className="text-white">
-                    {forecast.valid_from}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Valid To
-                  </p>
-
-                  <p className="text-white">
-                    {forecast.valid_to}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-slate-500 text-sm">
-                    Airport Elevation
-                  </p>
-
-                  <p className="text-white">
-                    {forecast.airport_elevation_ft} ft
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* FORECAST TIMELINE */}
-
-            <div className="space-y-4">
-
-              <h3 className="text-sky-300 text-xl font-semibold">
-                FORECAST TIMELINE
-              </h3>
-
-              {forecast.forecast_periods.map((period, index) => (
-
-                <div
-                  key={index}
-                  className="bg-slate-900 border border-slate-700 rounded-xl p-5"
-                >
-
-                  <div className="flex justify-between items-center mb-5">
-
-                    <h4 className="text-2xl font-bold text-sky-300">
-                      {period.type}
-                    </h4>
-
+            {/* Overall Operational Assessment */}
+            {analysis && (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
+                  <h3 className="font-mono text-xs tracking-wider text-zinc-400 uppercase">
+                    TAF Period Risk Analysis
+                  </h3>
+                  <div className="flex items-center gap-3">
                     <span
-                      className={`px-5 py-2 rounded-lg font-bold
-                      ${
-                        analysis.forecast_summary[index].verdict === "GO"
-                          ? "bg-green-600"
-                          : analysis.forecast_summary[index].verdict === "CAUTION"
-                          ? "bg-yellow-500 text-black"
-                          : "bg-red-600"
+                      className={`px-3 py-1 rounded text-xs font-bold tracking-wider font-mono ${
+                        analysis.overall_verdict === "GO"
+                          ? "bg-emerald-950/90 text-emerald-300 border border-emerald-800"
+                          : analysis.overall_verdict === "CAUTION"
+                          ? "bg-amber-950/90 text-amber-300 border border-amber-800"
+                          : "bg-rose-950/90 text-rose-300 border border-rose-800"
                       }`}
                     >
-                      {analysis.forecast_summary[index].verdict}
+                      {analysis.overall_verdict}
                     </span>
-
+                    <span className="text-xs font-mono text-zinc-400">
+                      Peak Risk: <strong className="text-white">{analysis.risk_level}</strong>
+                    </span>
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-y-5 gap-x-10">
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Forecast Period
-                      </p>
-
-                      <p className="text-white">
-                        {period.from}
-                      </p>
-
-                      <p className="text-white">
-                        to
-                      </p>
-
-                      <p className="text-white">
-                        {period.to}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Wind
-                      </p>
-
-                      <p className="text-amber-300 font-semibold text-lg">
-                        {period.wind_dir_deg}° / {period.wind_speed_kt} kt
-                        {period.wind_gust_kt &&
-                          ` (G ${period.wind_gust_kt} kt)`}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Visibility
-                      </p>
-
-                      <p className="text-amber-300 font-semibold text-lg">
-                        {period.visibility_km} km
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Weather
-                      </p>
-
-                      <p className="text-amber-300 font-semibold text-lg">
-                        {period.weather || "Nil Significant Weather"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Cloud Layers
-                      </p>
-
-                      <div className="text-white space-y-1">
-
-                        {period.clouds.length > 0 ? (
-                          period.clouds.map((cloud, i) => (
-                            <div key={i}>
-                              {cloud}
-                            </div>
-                          ))
-                        ) : (
-                          <div>None</div>
-                        )}
-
-                      </div>
-
-                    </div>
-
-                    <div>
-                      <p className="text-slate-500 text-sm">
-                        Reasons
-                      </p>
-
-                      <div className="text-red-300 space-y-1">
-
-                        {analysis.forecast_summary[index].reasons.length > 0 ? (
-                          analysis.forecast_summary[index].reasons.map(
-                            (reason, i) => (
-                              <div key={i}>
-                                • {reason}
-                              </div>
-                            )
-                          )
-                        ) : (
-                          <div className="text-green-400">
-                            No operational concerns
-                          </div>
-                        )}
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
                 </div>
 
-              ))}            </div>
+                <div className="grid md:grid-cols-2 gap-4 font-mono text-xs">
+                  <div className="p-3 rounded bg-zinc-950/50 border border-zinc-800">
+                    <span className="text-[10px] text-zinc-400 uppercase block mb-1">
+                      Worst Forecast Period
+                    </span>
+                    <p className="text-zinc-200 font-bold">{analysis.worst_period}</p>
+                  </div>
+                  <div className="p-3 rounded bg-zinc-950/50 border border-zinc-800">
+                    <span className="text-[10px] text-zinc-400 uppercase block mb-1">
+                      Assessment Basis
+                    </span>
+                    <p className="text-zinc-400 text-[11px]">
+                      Operational verdict evaluated across all issued trend intervals.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {/* OPERATIONAL DECISION */}
-
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 mt-4">
-
-              <h3 className="text-sky-300 text-lg font-semibold mb-4">
-                OPERATIONAL DECISION
+            {/* Forecast Periods Timeline */}
+            <div className="space-y-3">
+              <h3 className="font-mono text-xs tracking-wider text-zinc-400 uppercase pb-1">
+                Forecast Periods Breakdown ({forecast.forecast_periods?.length || 0} Groups)
               </h3>
 
-              <div className="flex items-center gap-4 mb-5">
+              {forecast.forecast_periods?.map((period, index) => {
+                const periodVerdict = analysis?.forecast_summary?.[index]?.verdict;
+                return (
+                  <div
+                    key={index}
+                    className="bg-zinc-900/40 border border-zinc-800/80 rounded-lg p-4 font-mono"
+                  >
+                    <div className="flex items-center justify-between border-b border-zinc-800/60 pb-2.5 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white tracking-wider">
+                          [{period.type}]
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          {period.from} → {period.to}
+                        </span>
+                      </div>
 
-                <span
-                  className={`inline-block px-6 py-2 rounded-lg text-lg font-bold
-                  ${
-                    analysis.overall_verdict === "GO"
-                      ? "bg-green-600"
-                      : analysis.overall_verdict === "CAUTION"
-                      ? "bg-yellow-500 text-black"
-                      : "bg-red-600"
-                  }`}
-                >
-                  {analysis.overall_verdict}
-                </span>
+                      {periodVerdict && (
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${
+                            periodVerdict === "GO"
+                              ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800"
+                              : periodVerdict === "CAUTION"
+                              ? "bg-amber-950/80 text-amber-300 border border-amber-800"
+                              : "bg-rose-950/80 text-rose-300 border border-rose-800"
+                          }`}
+                        >
+                          {periodVerdict}
+                        </span>
+                      )}
+                    </div>
 
-                <span className="text-slate-300">
-                  Risk Level:
-                  <span className="font-semibold text-white ml-2">
-                    {analysis.risk_level}
-                  </span>
-                </span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-2">
+                      <div className="p-2.5 rounded bg-zinc-950/50 border border-zinc-800/60">
+                        <span className="text-[10px] text-zinc-400 uppercase block">Wind</span>
+                        <span className="text-zinc-200">
+                          {period.wind_dir_deg !== null ? `${period.wind_dir_deg}°` : "VRB"} / {period.wind_speed_kt} kt
+                          {period.wind_gust_kt ? ` G${period.wind_gust_kt}kt` : ""}
+                        </span>
+                      </div>
 
-              </div>
+                      <div className="p-2.5 rounded bg-zinc-950/50 border border-zinc-800/60">
+                        <span className="text-[10px] text-zinc-400 uppercase block">Visibility</span>
+                        <span className="text-zinc-200">
+                          {period.visibility_km !== null ? `${period.visibility_km} km` : "Unspecified"}
+                        </span>
+                      </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+                      <div className="p-2.5 rounded bg-zinc-950/50 border border-zinc-800/60">
+                        <span className="text-[10px] text-zinc-400 uppercase block">Weather</span>
+                        <span className="text-zinc-200">{period.weather || "NSW"}</span>
+                      </div>
 
-                <div>
+                      <div className="p-2.5 rounded bg-zinc-950/50 border border-zinc-800/60">
+                        <span className="text-[10px] text-zinc-400 uppercase block">Clouds</span>
+                        <span className="text-zinc-200">
+                          {period.clouds?.length ? period.clouds.join(", ") : "Clear / NSC"}
+                        </span>
+                      </div>
+                    </div>
 
-                  <p className="text-slate-500 text-sm mb-2">
-                    Worst Forecast Period
-                  </p>
-
-                  <p className="text-xl font-semibold text-amber-300">
-                    {analysis.worst_period}
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-slate-500 text-sm mb-2">
-                    Forecast Summary
-                  </p>
-
-                  <p className="text-slate-300">
-                    This operational decision is based on all forecast
-                    periods contained in the issued TAF.
-                  </p>
-
-                </div>
-
-              </div>
-
+                    {/* Operational Reasons if any */}
+                    {analysis?.forecast_summary?.[index]?.reasons?.length > 0 && (
+                      <div className="pt-2 text-[11px] text-zinc-400 flex items-center gap-2">
+                        <span className="text-zinc-400 uppercase">Hazards:</span>
+                        <span>{analysis.forecast_summary[index].reasons.join(" • ")}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-
-          </>
-
+          </div>
         )}
-
       </div>
-
     </div>
-
   );
-
 }
 
 export default Taf;

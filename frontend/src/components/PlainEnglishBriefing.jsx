@@ -16,10 +16,10 @@ function PlainEnglishBriefing({ icao, reportType = "METAR" }) {
       const res = await getBriefingSummary(icao, reportType);
       setData(res.data);
     } catch (err) {
-      console.error("Failed to fetch LLM briefing summary:", err);
+      console.error("Failed to fetch briefing summary:", err);
       setError(
         err.response?.data?.detail ||
-          "Unable to generate plain-English briefing at this time."
+          "Advisory briefing temporarily unavailable."
       );
     } finally {
       setLoading(false);
@@ -34,25 +34,16 @@ function PlainEnglishBriefing({ icao, reportType = "METAR" }) {
 
   if (loading) {
     return (
-      <div className="bg-slate-900 border border-sky-500/30 rounded-xl p-6 mb-6 shadow-lg shadow-sky-950/20">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-3 w-3 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-            </span>
-            <h3 className="text-xl font-bold text-sky-400 tracking-wide">
-              Generating Plain-English Briefing...
-            </h3>
-          </div>
-          <span className="text-xs uppercase font-mono px-3 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">
-            AI Assistant
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-5 mb-5 font-mono text-xs text-zinc-400">
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="w-2 h-2 rounded-full bg-zinc-400 animate-pulse"></span>
+          <span className="uppercase tracking-wider text-zinc-200">
+            Synthesizing Operational Weather Summary [{icao} {reportType}]...
           </span>
         </div>
-        <div className="space-y-3 animate-pulse">
-          <div className="h-4 bg-slate-800 rounded w-5/6"></div>
-          <div className="h-4 bg-slate-800 rounded w-4/6"></div>
-          <div className="h-4 bg-slate-800 rounded w-3/6"></div>
+        <div className="space-y-2 animate-pulse pt-2">
+          <div className="h-3 bg-zinc-800/80 rounded w-5/6"></div>
+          <div className="h-3 bg-zinc-800/80 rounded w-4/6"></div>
         </div>
       </div>
     );
@@ -60,19 +51,14 @@ function PlainEnglishBriefing({ icao, reportType = "METAR" }) {
 
   if (error) {
     return (
-      <div className="bg-slate-900 border border-amber-500/30 rounded-xl p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-amber-400">
-              Plain-English Briefing Notice
-            </h3>
-            <p className="text-sm text-slate-400 mt-1">{error}</p>
-          </div>
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 mb-5 text-xs font-mono">
+        <div className="flex items-center justify-between text-zinc-400">
+          <span>NOTICE: {error}</span>
           <button
             onClick={fetchSummary}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm text-sky-300 font-medium transition-colors"
+            className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-[11px] uppercase transition"
           >
-            Retry Briefing
+            Retry
           </button>
         </div>
       </div>
@@ -85,177 +71,131 @@ function PlainEnglishBriefing({ icao, reportType = "METAR" }) {
   const verification = data.verification || { passed: true, mismatches: [] };
 
   return (
-    <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700/80 rounded-xl p-6 mb-6 shadow-xl relative overflow-hidden">
-      {/* Top Banner: Title + Disclaimers */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-              Plain-English Briefing
-              <span className="text-xs uppercase font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-700/50">
-                {reportType}
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Synthesized from parsed ground-truth observations
-            </p>
-          </div>
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5 mb-6 text-zinc-200">
+      {/* Technical Header & Verification Status */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800 text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <span className="font-bold tracking-wider text-white">
+            OPERATIONAL BRIEFING ADVISORY
+          </span>
+          <span className="text-zinc-400">/</span>
+          <span className="text-zinc-400">[{reportType}]</span>
         </div>
 
-        {/* Badges: Disclaimer & Verification */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Mandatory AI Notice */}
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            AI-generated · Verify against official data
+          {/* Regulatory Advisory Notice */}
+          <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] uppercase tracking-wider">
+            AI Advisory · Verify with official report
           </span>
 
-          {/* Verification Badge */}
+          {/* Verification Pill */}
           {verification.passed ? (
-            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-              Verified against parsed data
+            <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              VERIFIED: 0 DISCREPANCIES
             </span>
           ) : (
             <button
               onClick={() => setShowMismatches(!showMismatches)}
-              className="text-xs font-semibold px-3 py-1 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5"
+              className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] tracking-wider flex items-center gap-1 hover:border-zinc-700 transition"
             >
-              <svg className="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              Mismatches Found ({verification.mismatches?.length || 1})
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              DISCREPANCY ALERT ({verification.mismatches?.length || 1})
             </button>
           )}
         </div>
       </div>
 
-      {/* Mismatches Details Panel (if any) */}
-      {!verification.passed && (
-        <div className="mt-4 p-4 rounded-lg bg-rose-950/40 border border-rose-800/60 text-xs">
-          <div className="flex items-center justify-between text-rose-300 font-semibold mb-2">
-            <span>Automated Claim Verification Discrepancies:</span>
-            <button
-              onClick={() => setShowMismatches(!showMismatches)}
-              className="text-rose-400 hover:underline"
-            >
-              {showMismatches ? "Hide" : "Show details"}
-            </button>
-          </div>
-          {showMismatches && (
-            <ul className="list-disc list-inside space-y-1 text-rose-200">
-              {verification.mismatches.map((m, idx) => (
-                <li key={idx}>{m}</li>
-              ))}
-            </ul>
-          )}
+      {/* Discrepancy details if verification failed */}
+      {!verification.passed && showMismatches && (
+        <div className="mt-3 p-3 rounded bg-zinc-950 border border-zinc-800 font-mono text-[11px] text-zinc-300">
+          <span className="text-zinc-400 uppercase block mb-1">
+            Verification Discrepancies:
+          </span>
+          <ul className="list-disc list-inside space-y-0.5 text-zinc-400">
+            {verification.mismatches.map((m, idx) => (
+              <li key={idx}>{m}</li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {/* Primary Briefing Summary */}
-      <div className="my-5">
-        <p className="text-base text-slate-100 leading-relaxed font-normal bg-slate-800/40 border border-slate-700/40 rounded-lg p-4">
+      {/* Main Narrative */}
+      <div className="my-4">
+        <p className="text-sm leading-relaxed text-zinc-200 font-sans">
           {summary.summary}
         </p>
       </div>
 
-      {/* Meteorological Breakdown Grid */}
-      <div className="grid md:grid-cols-3 gap-4 mb-4">
-        {/* Wind Summary */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3.5">
-          <span className="text-xs font-mono uppercase text-slate-400 block mb-1">
-            Wind Analysis
+      {/* Parameter Breakdown */}
+      <div className="grid md:grid-cols-3 gap-3 mb-3 font-mono text-xs">
+        <div className="p-3 rounded bg-zinc-950/60 border border-zinc-800/80">
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1">
+            Wind Vector
           </span>
-          <p className="text-sm text-sky-200 font-medium">
+          <span className="text-zinc-200">
             {summary.wind_summary || "Unknown"}
-          </p>
+          </span>
         </div>
 
-        {/* Visibility Category */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3.5">
-          <span className="text-xs font-mono uppercase text-slate-400 block mb-1">
+        <div className="p-3 rounded bg-zinc-950/60 border border-zinc-800/80">
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1">
             Visibility Category
           </span>
-          <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-sky-950 text-sky-300 border border-sky-800">
+          <span className="text-zinc-200">
             {summary.visibility_category || "Unknown"}
           </span>
         </div>
 
-        {/* Ceiling Category */}
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3.5">
-          <span className="text-xs font-mono uppercase text-slate-400 block mb-1">
+        <div className="p-3 rounded bg-zinc-950/60 border border-zinc-800/80">
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1">
             Ceiling Category
           </span>
-          <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-sky-950 text-sky-300 border border-sky-800">
+          <span className="text-zinc-200">
             {summary.ceiling_category || "Unknown"}
           </span>
         </div>
       </div>
 
-      {/* Operational Hazards & Data Gaps */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Hazards */}
-        <div className="p-3.5 rounded-lg bg-slate-800/30 border border-slate-800">
-          <span className="text-xs font-mono uppercase text-slate-400 block mb-2">
+      {/* Hazards & Gaps */}
+      <div className="grid md:grid-cols-2 gap-3 text-xs font-mono">
+        <div className="p-3 rounded bg-zinc-950/40 border border-zinc-800/60">
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1.5">
             Operational Hazards
           </span>
           {summary.hazards && summary.hazards.length > 0 ? (
-            <ul className="space-y-1.5">
-              {summary.hazards.map((hazard, idx) => (
-                <li
-                  key={idx}
-                  className="text-xs text-amber-300 flex items-center gap-1.5"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                  {hazard}
+            <ul className="space-y-1">
+              {summary.hazards.map((h, i) => (
+                <li key={i} className="text-zinc-300 flex items-center gap-1.5">
+                  <span className="text-zinc-500">•</span>
+                  {h}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-slate-500 italic">
-              No significant hazards flagged.
-            </p>
+            <span className="text-zinc-400 text-[11px]">
+              None flagged in parsed fields.
+            </span>
           )}
         </div>
 
-        {/* Data Gaps */}
-        <div className="p-3.5 rounded-lg bg-slate-800/30 border border-slate-800">
-          <span className="text-xs font-mono uppercase text-slate-400 block mb-2">
-            Observation Data Gaps
+        <div className="p-3 rounded bg-zinc-950/40 border border-zinc-800/60">
+          <span className="text-[10px] text-zinc-400 uppercase tracking-wider block mb-1.5">
+            Report Data Gaps
           </span>
           {summary.data_gaps && summary.data_gaps.length > 0 ? (
-            <ul className="space-y-1.5">
-              {summary.data_gaps.map((gap, idx) => (
-                <li
-                  key={idx}
-                  className="text-xs text-slate-400 flex items-center gap-1.5"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                  {gap}
+            <ul className="space-y-1">
+              {summary.data_gaps.map((g, i) => (
+                <li key={i} className="text-zinc-400 flex items-center gap-1.5">
+                  <span className="text-zinc-500">•</span>
+                  {g}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-slate-500 italic">
-              Report contains complete standard observation fields.
-            </p>
+            <span className="text-zinc-400 text-[11px]">
+              Complete observation fields available.
+            </span>
           )}
         </div>
       </div>
