@@ -16,8 +16,8 @@ from schemas.briefing import LLMBriefingOutput
 logger = logging.getLogger("skybrief.llm")
 
 # Default model if not specified in environment
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-API_TIMEOUT_SECONDS = 12.0
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+API_TIMEOUT_SECONDS = 30.0
 
 SYSTEM_INSTRUCTION = """You are an expert aviation weather assistant generating factual, plain-English weather briefings for licensed pilots and student pilots.
 
@@ -193,12 +193,12 @@ def get_safe_fallback_briefing(reason: str = "Service unavailable") -> LLMBriefi
     )
 
 
-async def _call_gemini_api(
+def _execute_gemini_call(
     client: genai.Client,
     model_name: str,
     prompt: str
 ) -> LLMBriefingOutput:
-    """Executes a single API call to Gemini with timeout and JSON schema enforcement."""
+    """Synchronous Gemini call executed inside a thread pool with JSON schema enforcement."""
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
@@ -206,19 +206,15 @@ async def _call_gemini_api(
         temperature=0.1,
     )
 
-    response = await asyncio.wait_for(
-        client.aio.models.generate_content(
-            model=model_name,
-            contents=[FEW_SHOT_PROMPT, prompt],
-            config=config,
-        ),
-        timeout=API_TIMEOUT_SECONDS
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[FEW_SHOT_PROMPT, prompt],
+        config=config,
     )
 
     if not response or not response.text:
         raise ValueError("Empty response received from Gemini API")
 
-    # Parse and validate with Pydantic
     parsed_json = json.loads(response.text)
     return LLMBriefingOutput.model_validate(parsed_json)
 
@@ -230,11 +226,11 @@ async def generate_plain_english_briefing(
 ) -> Tuple[LLMBriefingOutput, str]:
     """
     Generates a plain-English briefing using Gemini API.
-    Retries once on transient failure, then safely falls back.
+    Retries across primary and backup models, then safely falls back.
     Returns: (LLMBriefingOutput, status) where status is 'ok' or 'fallback'.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    model_name = os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
+    primary_model = os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
 
     if not api_key:
         logger.warning("GEMINI_API_KEY environment variable is missing or empty. Using fallback.")
@@ -243,18 +239,23 @@ async def generate_plain_english_briefing(
     user_prompt = format_parsed_data_prompt(parsed_data, report_type, raw_report)
     client = genai.Client(api_key=api_key)
 
-    # Attempt 1
-    try:
-        output = await _call_gemini_api(client, model_name, user_prompt)
-        return output, "ok"
-    except Exception as e1:
-        logger.warning(f"First attempt to generate LLM briefing failed ({type(e1).__name__}): {e1}. Retrying once...")
+    # Models to attempt in order (primary followed by robust flash fallbacks)
+    candidate_models = [primary_model]
+    for backup in ["gemini-3.5-flash", "gemini-flash-latest"]:
+        if backup not in candidate_models:
+            candidate_models.append(backup)
 
-    # Attempt 2 (Retry once)
-    try:
-        await asyncio.sleep(1.0)
-        output = await _call_gemini_api(client, model_name, user_prompt)
-        return output, "ok"
-    except Exception as e2:
-        logger.error(f"Second attempt to generate LLM briefing failed ({type(e2).__name__}): {e2}. Returning safe fallback.")
-        return get_safe_fallback_briefing("LLM service unavailable"), "fallback"
+    for attempt, candidate in enumerate(candidate_models):
+        try:
+            output = await asyncio.wait_for(
+                asyncio.to_thread(_execute_gemini_call, client, candidate, user_prompt),
+                timeout=API_TIMEOUT_SECONDS
+            )
+            return output, "ok"
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} with model '{candidate}' failed ({type(e).__name__}): {e}")
+            if attempt < len(candidate_models) - 1:
+                await asyncio.sleep(0.5)
+
+    logger.error("All Gemini API candidate models exhausted. Returning safe fallback.")
+    return get_safe_fallback_briefing("LLM service unavailable"), "fallback"

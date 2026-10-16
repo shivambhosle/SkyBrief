@@ -46,10 +46,8 @@ async def test_llm_retries_on_failure_and_succeeds(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy_test_key")
 
     mock_client = MagicMock()
-    mock_aio = MagicMock()
     mock_models = MagicMock()
-    mock_client.aio = mock_aio
-    mock_aio.models = mock_models
+    mock_client.models = mock_models
 
     valid_json = """{
         "summary": "Visual conditions at KSFO with wind from 280° at 14 kt.",
@@ -63,7 +61,7 @@ async def test_llm_retries_on_failure_and_succeeds(monkeypatch):
     mock_response.text = valid_json
 
     # First attempt raises RuntimeError, second succeeds
-    mock_models.generate_content = AsyncMock(side_effect=[RuntimeError("Rate limit transient"), mock_response])
+    mock_models.generate_content.side_effect = [RuntimeError("Rate limit transient"), mock_response]
 
     with patch("services.llm_briefing.genai.Client", return_value=mock_client):
         parsed = {"icao": "KSFO", "wind_dir_deg": 280, "wind_speed_kt": 14}
@@ -79,13 +77,11 @@ async def test_llm_falls_back_when_all_retries_fail(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy_test_key")
 
     mock_client = MagicMock()
-    mock_aio = MagicMock()
     mock_models = MagicMock()
-    mock_client.aio = mock_aio
-    mock_aio.models = mock_models
+    mock_client.models = mock_models
 
-    # Both attempts fail
-    mock_models.generate_content = AsyncMock(side_effect=RuntimeError("Service down"))
+    # All attempts fail
+    mock_models.generate_content.side_effect = RuntimeError("Service down")
 
     with patch("services.llm_briefing.genai.Client", return_value=mock_client):
         parsed = {"icao": "KSFO", "wind_dir_deg": 280, "wind_speed_kt": 14}
@@ -93,4 +89,4 @@ async def test_llm_falls_back_when_all_retries_fail(monkeypatch):
 
         assert status == "fallback"
         assert "temporarily unavailable" in output.summary
-        assert mock_models.generate_content.call_count == 2
+        assert mock_models.generate_content.call_count >= 2
