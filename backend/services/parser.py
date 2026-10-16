@@ -4,8 +4,12 @@ def parse_metar(data: dict):
 
     visibility_km = None
 
-    if data.get("visib"):
-        visibility_km = round(float(data["visib"]) * 1.60934, 1)
+    if data.get("visib") is not None:
+        try:
+            cleaned_vis = str(data["visib"]).replace("+", "").replace("<", "").strip()
+            visibility_km = round(float(cleaned_vis) * 1.60934, 1)
+        except (ValueError, TypeError):
+            visibility_km = None
 
     ceiling_ft = None
 

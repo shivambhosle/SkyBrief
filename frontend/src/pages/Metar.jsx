@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { getBriefing } from "../services/api";
+import PlainEnglishBriefing from "../components/PlainEnglishBriefing";
 
 function Metar() {
   const [icao, setIcao] = useState("");
@@ -135,6 +136,9 @@ function Metar() {
               </pre>
 
             </div>
+
+            {/* PLAIN-ENGLISH BRIEFING */}
+            <PlainEnglishBriefing icao={weather.icao || icao} reportType="METAR" />
 
             {/* DECODED WEATHER */}
 

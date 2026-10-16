@@ -8,9 +8,13 @@ import Dashboard from "./pages/Dashboard";
 import Metar from "./pages/Metar";
 import Taf from "./pages/Taf";
 import RouteBriefing from "./pages/RouteBriefing";
+import AnimatedBackground from "./components/AnimatedBackground/AnimatedBackground";
 
 function App() {
   return (
+  <>
+    <AnimatedBackground />
+
     <BrowserRouter>
       <Routes>
         <Route
@@ -34,6 +38,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+  </>
   );
 }
 

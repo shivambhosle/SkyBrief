@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { getTaf } from "../services/api";
+import PlainEnglishBriefing from "../components/PlainEnglishBriefing";
 
 function Taf() {
   const [icao, setIcao] = useState("");
@@ -135,6 +136,9 @@ function Taf() {
               </pre>
 
             </div>
+
+            {/* PLAIN-ENGLISH BRIEFING */}
+            <PlainEnglishBriefing icao={forecast.icao || icao} reportType="TAF" />
 
             {/* FORECAST SUMMARY */}
 
